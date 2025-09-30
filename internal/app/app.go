@@ -12,5 +12,6 @@ func RunApp() {
 	infrasturcture.ConnectPostgres()
 	infrasturcture.PingRedis()
 	r := mux.NewRouter()
+
 	infrasturcture.RunServer(r)
 }

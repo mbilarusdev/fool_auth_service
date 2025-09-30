@@ -19,6 +19,8 @@ func PingRedis() *redis.Client {
 		DB:       0,
 	})
 
+	LogInfo("Connected to redis")
+
 	ctx := context.Background()
 
 	pingCmd := rdb.Ping(ctx)

@@ -13,7 +13,7 @@ type DBPool struct {
 }
 
 func (pool *DBPool) Acquire(ctx context.Context) (*pgxpool.Conn, error) {
-	<-pool.Limiter
+	pool.Limiter <- struct{}{}
 
 	c, err := pool.InnerPool.Acquire(ctx)
 	if err != nil {
@@ -26,5 +26,5 @@ func (pool *DBPool) Acquire(ctx context.Context) (*pgxpool.Conn, error) {
 
 func (pool *DBPool) Release(ctx context.Context, c *pgxpool.Conn) {
 	c.Release()
-	pool.Limiter <- struct{}{}
+	<-pool.Limiter
 }

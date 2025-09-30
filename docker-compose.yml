@@ -9,9 +9,30 @@ services:
       LOG_LEVEL: ${LOG_LEVEL}
       REDIS_ADDR: ${REDIS_ADDR}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      FOOL_AUTH_SERVICE_ADDR: ${FOOL_AUTH_SERVICE_ADDR}
+      AUTH_SERVICE_ADDR: ${AUTH_SERVICE_ADDR}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      AUTH_SERVICE_DB_CONNS: ${AUTH_SERVICE_DB_CONNS}
     depends_on:
       - redis
+      - postgres
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
     networks:
       - backend
 
@@ -22,6 +43,9 @@ services:
       - "6379:6379"
     networks:
       - backend
+
+volumes:
+  postgres_data:
 
 networks:
   backend:

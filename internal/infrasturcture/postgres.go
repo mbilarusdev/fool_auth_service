@@ -6,23 +6,27 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	. "github.com/mbilarusdev/fool_auth_service/internal/logger"
 	"github.com/mbilarusdev/fool_auth_service/internal/utils"
 )
 
 func ConnectPostgres() *utils.DBPool {
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
 	db := os.Getenv("POSTGRES_DB")
 	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")
-	maxConns, err := strconv.Atoi(os.Getenv("POSTGRES_CONNS_AUTH_SERVICE"))
+	maxConns, err := strconv.Atoi(os.Getenv("AUTH_SERVICE_DB_CONNS"))
+
 	if err != nil {
 		PanicErrWithMsg(err, "Failed to parse maxConns")
 	}
 
 	connString := fmt.Sprintf(
-		"dbname=%v user=%v password=%v pool_max_conns=%v pool_max_conn_lifetime=5m",
+		"host=%v port=%v dbname=%v user=%v password=%v pool_max_conns=%v pool_max_conn_lifetime=5m sslmode=disable",
+		host,
+		port,
 		db,
 		user,
 		password,
@@ -34,26 +38,32 @@ func ConnectPostgres() *utils.DBPool {
 		PanicErrWithMsg(err, "Failed to parse postgres config!")
 	}
 
-	conf.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
-		LogInfo("Postgres connected!")
-
-		_, err := c.Exec(ctx, "SET TIME ZONE 'UTC'")
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
 	outerPool := new(utils.DBPool)
 	outerPool.Limiter = make(chan struct{}, maxConns)
 
-	innerPool, err := pgxpool.NewWithConfig(context.Background(), conf)
+	ctx := context.Background()
+
+	innerPool, err := pgxpool.NewWithConfig(ctx, conf)
 	if err != nil {
 		PanicErrWithMsg(err, "Failed to connect to postgres")
 	}
 
 	outerPool.InnerPool = innerPool
+
+	LogInfo("Postgres connected!")
+
+	c, err := outerPool.Acquire(ctx)
+	if err != nil {
+		PanicErrWithMsg(err, "Failed to acquire conn when SET TIME ZONE UTC")
+	}
+
+	defer outerPool.Release(ctx, c)
+
+	_, err = c.Exec(ctx, "SET TIME ZONE 'UTC'")
+	if err != nil {
+		PanicErrWithMsg(err, "Failed to SET TIME ZONE UTC")
+	}
+	LogInfo("TIME ZONE UTS Set upped in Postgres!")
 
 	return outerPool
 }
