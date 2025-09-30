@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/go-redis/redis/v8"
+	. "github.com/mbilarusdev/fool_auth_service/internal/logger"
 )
 
 func PingRedis() *redis.Client {
@@ -17,6 +18,8 @@ func PingRedis() *redis.Client {
 		Password: password,
 		DB:       0,
 	})
+
+	LogInfo("Connected to redis")
 
 	ctx := context.Background()
 
