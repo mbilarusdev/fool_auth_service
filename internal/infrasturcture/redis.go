@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/go-redis/redis/v8"
+	. "github.com/mbilarusdev/fool_auth_service/internal/logger"
 )
 
 func PingRedis() *redis.Client {

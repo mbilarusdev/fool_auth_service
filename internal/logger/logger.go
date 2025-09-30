@@ -1,4 +1,4 @@
-package infrasturcture
+package logger
 
 import (
 	"fmt"
@@ -39,8 +39,22 @@ func InitLogger() {
 	LogInfo("Logger Zap inited!")
 }
 
+func PanicErrWithMsg(err error, msg string, fields ...zap.Field) {
+	logger.Error(fmt.Sprintf("%v: %v", msg, err), fields...)
+	panic(err)
+}
+
+func PanicErr(err error, fields ...zap.Field) {
+	logger.Error(fmt.Sprintf("%v", err), fields...)
+	panic(err)
+}
+
 func LogErr(err error, fields ...zap.Field) {
 	logger.Error(fmt.Sprintf("%v", err), fields...)
+}
+
+func LogErrWithMsg(err error, msg string, fields ...zap.Field) {
+	logger.Error(fmt.Sprintf("%v: %v", msg, err), fields...)
 }
 
 func LogWarn(msg string, fields ...zap.Field) {
