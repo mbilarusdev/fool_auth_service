@@ -1,0 +1,48 @@
+name: Build, Test and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ^1.25.1
+
+      - name: Build binary
+        run: go build -o fool-auth-service cmd/fool_auth_service/main.go
+
+      - name: Create Docker Image
+        run: |
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          docker build -t mbilarusdev/fool-auth-service:${{ github.sha }} .
+          docker tag mbilarusdev/fool-auth-service:${{ github.sha }} mbilarusdev/fool-auth-service:latest
+          docker push mbilarusdev/fool-auth-service:latest
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Stop previous container if exists
+        run: |
+          CONTAINER_ID=$(docker ps -aqf "ancestor=mbilarusdev/fool-auth-service")
+          if [[ ! -z "$CONTAINER_ID" ]]; then
+              docker stop $CONTAINER_ID || true
+              docker rm $CONTAINER_ID || true
+          fi
+
+      - name: Run new container from the latest image
+        run: |
+          docker run -d -p 8080:8080 \
+            -e LOG_LEVEL=${{ secrets.LOG_LEVEL }} \
+            -e REDIS_ADDR=${{ secrets.REDIS_ADDR }} \
+            -e REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} \
+            -e FOOL_AUTH_SERVICE_ADDR=${{ secrets.FOOL_AUTH_SERVICE_ADDR }} \
+            mbilarusdev/fool-auth-service:latest
