@@ -11,6 +11,7 @@ services:
       PGX: ${PGX}
       ADDR: ${ADDR}
       SECRET: ${SECRET}
+      GATEWAY_ADDR: ${GATEWAY_ADDR}
     networks:
       - backend
 
